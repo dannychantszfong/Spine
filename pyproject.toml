@@ -1,0 +1,31 @@
+[project]
+name = "spine"
+version = "0.1.0"
+description = "A minimal Python agent backbone: a language model, four tools, and a loop."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "litellm>=1.40",
+    "pydantic>=2.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/spine"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
