@@ -6,7 +6,20 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-_Nothing yet._
+### Fixed
+
+- Moved the always-on rules from `doc/claude.md` to a root-level **`CLAUDE.md`**
+  (correct location and case) so Claude Code auto-loads them as project memory —
+  they previously sat at a path Claude Code never reads. Repointed the in-repo
+  references to those rules (`README.md`, `AGENTS.md`, `CONTRIBUTING.md`,
+  `doc/ARCHITECTURE.md`) at the new path.
+- Clarified in the base system prompt (`src/spine/prompts/system.md`) that the
+  line numbers in `read` output are reference-only and must never appear in an
+  `edit` `old_string`.
+
+### Removed
+
+- Deleted `doc/Foundation.md`.
 
 ## [0.1.0] - 2026-06-19
 

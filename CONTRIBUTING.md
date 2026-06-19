@@ -2,7 +2,7 @@
 
 spine is a reference codebase meant to be **read** and **cloned**, not shipped as
 a product. That shapes what "a good change" means here: it keeps the core tiny and
-obvious. The full rules live in [`doc/claude.md`](doc/claude.md),
+obvious. The full rules live in [`CLAUDE.md`](CLAUDE.md),
 [`AGENTS.md`](AGENTS.md), and [`doc/spine-spec.md`](doc/spine-spec.md). This file
 is the short checklist to run a change against before you commit it.
 
@@ -27,7 +27,7 @@ is the short checklist to run a change against before you commit it.
       `Agent` from one day being wrapped as a `Tool`.
 - [ ] **The orchestration switch is still `DISABLED`.** No multi-agent subsystem,
       no agent-as-a-tool wiring, no scheduling / messaging / shared state. To
-      change this, follow the switch in `doc/claude.md` / `AGENTS.md` — flip the
+      change this, follow the switch in `CLAUDE.md` / `AGENTS.md` — flip the
       one line and do the four steps; don't sneak it in.
 
 ## Style

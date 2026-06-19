@@ -1,6 +1,6 @@
 # AGENTS.md — directives for coding agents working in the spine repo
 
-Read `doc/spine-spec.md` (the full spec/README) and `doc/claude.md` (the always-on
+Read `doc/spine-spec.md` (the full spec/README) and `CLAUDE.md` (the always-on
 rule layer) before any structural change. The short version:
 
 - The model gets **exactly four tools**: `read`, `write`, `edit`, `bash`. Do not

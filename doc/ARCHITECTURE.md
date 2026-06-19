@@ -142,7 +142,7 @@ and its write) and *not* diffs (they fail to apply cleanly). The failure modes a
 loud and recoverable, and the error text feeds straight back to the model via
 `_dispatch`. The three branches are pinned by tests at `tests/test_tools.py:68`,
 `:80`, and `:94`. Do not switch the mechanic — see the invariant in
-[`claude.md`](claude.md) and the spec §4.
+[`CLAUDE.md`](../CLAUDE.md) and the spec §4.
 
 ---
 
@@ -222,7 +222,7 @@ reference implementation of that shape.
 Per spec §9, these are kept out of v1 by design, each with a known docking point:
 MCP, memory/persistence, RAG, graph orchestration, in-core permissions, and
 multi-agent orchestration. The last one is governed by the **orchestration
-switch** — currently `DISABLED` — mirrored in [`claude.md`](claude.md) and
+switch** — currently `DISABLED` — mirrored in [`CLAUDE.md`](../CLAUDE.md) and
 [`../AGENTS.md`](../AGENTS.md). The `Tool` protocol is kept agent-satisfiable
 (`tools/base.py:34`) precisely so that flipping the switch is a ~20-line wrapper
 and not a rewrite. Do not build any of these into the core; dock them at the seams

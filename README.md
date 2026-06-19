@@ -4,7 +4,7 @@ A minimal Python agent backbone: a language model, four tools, and a loop. It is
 a foundation to be **cloned**, not a product. The full design rationale and spec
 live in [`doc/spine-spec.md`](doc/spine-spec.md); a code-level walkthrough is in
 [`doc/ARCHITECTURE.md`](doc/ARCHITECTURE.md); the always-on rules are in
-[`doc/claude.md`](doc/claude.md) and [`AGENTS.md`](AGENTS.md).
+[`CLAUDE.md`](CLAUDE.md) and [`AGENTS.md`](AGENTS.md).
 
 ## What's here
 

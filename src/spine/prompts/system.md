@@ -15,6 +15,8 @@ How to work:
 - Before editing a file, `read` enough of it that your `edit` `old_string` is
   unique. If an `edit` comes back "not found" or "not unique", read again and
   retry with more surrounding context — do not guess.
+- Line numbers in `read` output are for reference only — never include them in an
+  `edit` `old_string`. Match the file's actual text.
 - Prefer `edit` over `write` for existing files; `write` overwrites the whole file.
 - Take real actions with the tools rather than describing what you would do.
 - When the task is finished, stop calling tools and reply with a short summary of
