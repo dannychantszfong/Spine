@@ -1,12 +1,13 @@
-# Contributing to spine
+# Working in this repo — keeping the grain
 
-spine is a reference codebase meant to be **read** and **cloned**, not shipped as
-a product. That shapes what "a good change" means here: it keeps the core tiny and
-obvious. The full rules live in [`CLAUDE.md`](CLAUDE.md),
-[`AGENTS.md`](AGENTS.md), and [`doc/spine-spec.md`](doc/spine-spec.md). This file
-is the short checklist to run a change against before you commit it.
+This repo is a clone of spine, a foundation meant to be **read** and **built on**.
+As you grow it into your own agent, most changes land at the seams and the core
+stays tiny and obvious — that's the grain worth keeping. The full reasoning lives
+in [`CLAUDE.md`](CLAUDE.md), [`AGENTS.md`](AGENTS.md), and
+[`doc/spine-spec.md`](doc/spine-spec.md). This file is the short checklist to run a
+change against before you commit it.
 
-## The invariants — don't break these without an explicit decision
+## The grain — keep these unless you've deliberately decided otherwise
 
 - [ ] **Still exactly four tools** — `read`, `write`, `edit`, `bash`. No fifth.
       New capability is a clone's tool or a `bash` invocation, not a core tool.
@@ -25,10 +26,11 @@ is the short checklist to run a change against before you commit it.
 - [ ] **The `Tool` protocol stays agent-satisfiable** (`name`, `description`,
       Pydantic `parameters`, `execute() -> ToolResult`). Nothing should prevent an
       `Agent` from one day being wrapped as a `Tool`.
-- [ ] **The orchestration switch is still `DISABLED`.** No multi-agent subsystem,
-      no agent-as-a-tool wiring, no scheduling / messaging / shared state. To
-      change this, follow the switch in `CLAUDE.md` / `AGENTS.md` — flip the
-      one line and do the four steps; don't sneak it in.
+- [ ] **Still single-agent, unless you've chosen sub-agents on purpose.** The base
+      ships one loop, one model, four tools. If your agent needs sub-agents, add
+      them deliberately, following the orchestration section in `CLAUDE.md` /
+      `AGENTS.md` (wrap an agent as a tool; decide nesting depth, budget, and who
+      terminates) — a considered addition, not an accidental one.
 
 ## Style
 
@@ -54,7 +56,6 @@ pytest                   # 16 tests, all offline (no API key needed)
       it (`tests/test_tools.py`).
 - [ ] Docs that name code stay true: if you move a symbol referenced by
       `doc/ARCHITECTURE.md` (it uses `file:line` links), update the reference.
-- [ ] `CHANGELOG.md` has an entry under **Unreleased** for anything user-visible.
 
 ## Adding capability the right way
 

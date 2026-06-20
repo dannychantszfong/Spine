@@ -9,9 +9,10 @@ top of — a data-analysis agent, a writing agent, whatever comes next. The core
 gives a language model four tools and a loop. Everything domain-specific is added
 by the clone, not baked into the base.
 
-This document is the spec **and** the README. Future-you reads this before
-cloning. A coding agent working inside the repo reads this (and `AGENTS.md`) to
-know what it may and may not build.
+This document is the spec **and** the orientation. Future-you reads this before
+cloning. A coding agent working inside the repo reads this (and `CLAUDE.md` /
+`AGENTS.md`) to learn the grain it's building with — what the foundation is, why
+it's shaped this way, and where new capability attaches.
 
 ---
 
@@ -48,10 +49,10 @@ genuinely unknown, the most valuable property of this foundation is that it
 *doesn't foreclose* anything.
 
 **Orchestration is recursion, not a layer.** An orchestrator is just an agent
-whose tools are other agents. We do **not** build a multi-agent subsystem. We
-only make sure an agent can satisfy the tool interface, so that the day we want
-nesting, it is a ~20-line wrapper and not a new architecture. (See §8 and the
-directive in §9.)
+whose tools are other agents. The base ships single-agent — it doesn't fold a
+multi-agent subsystem into the core — but it keeps an agent able to satisfy the
+tool interface, so the day you want nesting it's a ~20-line wrapper and not a new
+architecture. (See §8 and the orchestration section in §9.)
 
 **Security lives at the boundary.** The core has no permission system. It runs
 with the permissions of whoever launched it. Isolation is achieved by
@@ -113,10 +114,12 @@ here. The three layers below are touched rarely or never.
 ## 3. Project structure
 
 ```
-BaseAgentgent/
+spine/                     # rename freely — this is your agent's repo
 ├── pyproject.toml
-├── README.md              # this spec
-├── AGENTS.md              # directives for coding agents working in the repo (§9)
+├── README.md              # orientation + how to run
+├── CLAUDE.md              # always-on orientation + the bootstrap protocol
+├── AGENTS.md              # the same, mirrored for coding agents in the repo (§9)
+├── main.py                # runnable entry point (the repo is the agent)
 ├── src/
 │   └── spine/
 │       ├── __init__.py
@@ -133,8 +136,7 @@ BaseAgentgent/
 │       ├── skills.py      # skill discovery/loading seam
 │       └── prompts/
 │           └── system.md  # base system prompt
-├── examples/
-│   └── minimal_agent.py
+├── skills/                # capability-as-documentation (discovered, run via bash)
 └── tests/
 ```
 
@@ -306,42 +308,43 @@ purpose. Each notes how it docks later.
 | RAG / retrieval | Use-case-specific | Ship as a tool or skill |
 | Graph orchestration (LangGraph) | A single 4-tool loop barely uses it | Wrap the loop as a graph node if a real branching/durable workflow appears |
 | In-core permissions | Boundary handles it | Implement a `before_tool_call` hook |
-| **Multi-agent orchestration** | Orchestration is recursion (§8) | **Flip the switch below** |
+| **Multi-agent orchestration** | Orchestration is recursion (§8) | **Wrap an agent as a tool (§8); add the rest as needed** |
 
-### ⟶ THE ORCHESTRATION SWITCH
+### ⟶ THE ORCHESTRATION SECTION
 
-This is the one reversible directive. It is written as "off." To turn multi-agent
-orchestration on, you change one line and follow the steps — the whole policy
-reverses from that single edit. Mirror this same block at the top of `AGENTS.md`
-so any coding agent working in the repo obeys it.
+The base ships **single-agent** — one loop, one model, four tools — because most
+agents never need more and that's the right default. But orchestration is just
+recursion (§8): an orchestrator is an agent whose tools are other agents. Because
+the `Tool` protocol is kept agent-satisfiable, turning sub-agents *on* is an
+addition, not a rewrite. Mirror this framing at the top of `AGENTS.md` so a coding
+agent working in the repo has the same orientation.
 
 ```
 # ════════════════════════════════════════════════════════════════
-# ORCHESTRATION DIRECTIVE  ──  STATUS: DISABLED
+# ORCHESTRATION  ──  SHIPS SINGLE-AGENT, OPENS CLEANLY
 # ════════════════════════════════════════════════════════════════
-# WHILE DISABLED (current):
-#   - Spine is single-agent. One loop, one model, four tools.
-#   - DO NOT build a multi-agent subsystem.
-#   - DO NOT hand any agent another agent as a tool.
-#   - DO NOT add scheduling, inter-agent messaging, shared blackboard
-#     state, fan-out/fan-in, or supervisor/handoff protocols.
-#   - The Tool protocol (§8) MUST remain agent-satisfiable. Do not add
-#     anything that would prevent an Agent from being wrapped as a Tool.
+# Default (current): one loop, one model, four tools. Most agents stay
+# here, and that's fine.
 #
-# TO ENABLE — change the line above to "STATUS: ENABLED" and then:
+# If your agent needs sub-agents — a parent delegating to specialized
+# children — add them like this:
 #   1. Add agent_as_tool(agent) -> Tool   (~20 lines): execute() runs the
 #      child agent's loop on args["task"], returns its final message.
 #   2. Give a parent agent one or more child agents in its tool list.
-#   3. Only now consider the deferred pieces IF a real workflow needs them:
-#      parallel fan-out, shared state, handoff. Add the minimum, not the set.
-#   4. Budget awareness: each nested agent call burns a full conversation —
-#      watch token cost and latency.
+#   3. Decide up front: which children earn their keep, how deep nesting
+#      may go, the token/cost budget (each nested call burns a whole
+#      conversation), and who signals termination.
+#   4. Add parallel fan-out / shared state / handoff only when a real
+#      workflow needs them — the minimum, not the set.
+#
+# Keep the Tool protocol (§8) agent-satisfiable so this stays a ~20-line
+# wrapper rather than a new architecture.
 # ════════════════════════════════════════════════════════════════
 ```
 
-The point of the switch: the "do not do this" is explicit and self-contained, so
-the day you need multi-agent, you flip `DISABLED` → `ENABLED`, read the four
-steps, and the constraint becomes the construction plan.
+The point: single-agent is the default, not a locked door. When you need
+multi-agent, the property you kept — an agent is a tool — is already the
+construction plan.
 
 ---
 

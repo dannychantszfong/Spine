@@ -1,42 +1,52 @@
-# AGENTS.md — directives for coding agents working in the spine repo
+# AGENTS.md — for coding agents working in this repo
 
-Read `doc/spine-spec.md` (the full spec/README) and `CLAUDE.md` (the always-on
-rule layer) before any structural change. The short version:
+This repo is a **clone of spine**, a minimal agent foundation (a model, four
+tools, a loop). Your job here is to help grow it into the **new agent** the
+developer wants — building on the skeleton, not preserving "spine." The full rules
+and reasoning are in [`CLAUDE.md`](CLAUDE.md) and
+[`doc/spine-spec.md`](doc/spine-spec.md); this is the short mirror.
 
-- The model gets **exactly four tools**: `read`, `write`, `edit`, `bash`. Do not
-  add a fifth — `bash` is the escape hatch.
-- **Own the loop** (`src/spine/agent.py`, ~150 lines). No agent framework
-  (LangChain / LangGraph) in the core.
-- **Rent the provider layer.** All LLM calls go through `src/spine/provider.py`'s
-  `complete()`. The core never imports a provider SDK directly.
-- Tool args are **Pydantic-validated before `execute()`**; a validation failure is
-  returned to the model as the tool result, never raised.
-- `edit` is **exact string replacement** with a uniqueness check. Zero or multiple
-  matches return an error to the model. Never line-ranges or diffs.
-- **No permission system in the core.** The `before_tool_call` hook is the only
-  policy seam, and it ships permissive.
-- Keep it small and readable. This is a reference codebase: clarity over cleverness.
+## First, on a fresh clone
 
-```
-# ════════════════════════════════════════════════════════════════
-# ORCHESTRATION DIRECTIVE  ──  STATUS: DISABLED
-# ════════════════════════════════════════════════════════════════
-# WHILE DISABLED (current):
-#   - Spine is single-agent. One loop, one model, four tools.
-#   - DO NOT build a multi-agent subsystem.
-#   - DO NOT hand any agent another agent as a tool.
-#   - DO NOT add scheduling, inter-agent messaging, shared blackboard
-#     state, fan-out/fan-in, or supervisor/handoff protocols.
-#   - The Tool protocol (spec §8) MUST remain agent-satisfiable. Do not add
-#     anything that would prevent an Agent from being wrapped as a Tool.
-#
-# TO ENABLE — change the line above to "STATUS: ENABLED" and then:
-#   1. Add agent_as_tool(agent) -> Tool   (~20 lines): execute() runs the
-#      child agent's loop on args["task"], returns its final message.
-#   2. Give a parent agent one or more child agents in its tool list.
-#   3. Only now consider the deferred pieces IF a real workflow needs them:
-#      parallel fan-out, shared state, handoff. Add the minimum, not the set.
-#   4. Budget awareness: each nested agent call burns a full conversation —
-#      watch token cost and latency.
-# ════════════════════════════════════════════════════════════════
-```
+1. **Read the skeleton** — the loop (`src/spine/agent.py`), the four tools
+   (`src/spine/tools/`), and the seams (hooks, skills, the prompt). It's small;
+   read all of it.
+2. **Ask the developer what they're building** — what the agent does, what its
+   domain needs, what it should refuse. Interview before you implement.
+3. **Discuss the shape** — which need is a tool, which is a skill, which is a
+   prompt change, which is a hook policy.
+4. **Then build at the seams** — the loop and the four tools usually stay as they
+   are.
+
+## The grain (defaults to build with, and why)
+
+- **Four tools** — `read`, `write`, `edit`, `bash`; `bash` is the escape hatch,
+  which is why four is enough. Prefer a *skill* over a fifth core tool.
+- **Own the loop** (`src/spine/agent.py`, ~150 lines) — hand-written and
+  framework-free so every line is readable. No LangChain / LangGraph in the core.
+- **Rent the provider** — LLM calls go through `provider.py`'s `complete()`
+  (litellm); provider SDKs stay out of the rest of the core.
+- **Validate, don't crash** — tool args are Pydantic-validated before `execute()`;
+  a failure is returned to the model as the result, never raised.
+- **Policy lives in one place** — the `before_tool_call` hook, shipped permissive.
+  No permission system in the core; isolation is external.
+
+These are the recommended grain — they keep the agent readable and lock-in-free.
+
+## Going against the grain
+
+It's the developer's call, not a prohibition — but be honest about the cost. A
+fifth core tool, SDKs in the core, or a loop too big to hold in your head all
+erode what makes this foundation useful. And if the agent genuinely needs a heavy
+framework (LangChain / LangGraph / an orchestration runtime), say plainly that
+starting fresh with that framework usually beats retrofitting it onto this one,
+which isn't built to mesh with it. Compass, not cage.
+
+## Sub-agents (orchestration)
+
+Ships **single-agent** — the right default. If the new agent needs sub-agents, the
+`Tool` protocol is kept agent-satisfiable so it opens without a rewrite: wrap an
+`Agent` as a `Tool` whose `execute(args)` runs the child's loop on `args["task"]`
+(~20 lines). Decide first: which children, nesting depth, token / cost budget, and
+who signals termination. Add parallel fan-out / shared state / handoff only when a
+real workflow needs them. Full how-to in [`CLAUDE.md`](CLAUDE.md).

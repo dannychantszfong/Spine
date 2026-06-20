@@ -219,14 +219,14 @@ reference implementation of that shape.
 
 ## 7. What is deliberately *not* here
 
-Per spec §9, these are kept out of v1 by design, each with a known docking point:
-MCP, memory/persistence, RAG, graph orchestration, in-core permissions, and
-multi-agent orchestration. The last one is governed by the **orchestration
-switch** — currently `DISABLED` — mirrored in [`CLAUDE.md`](../CLAUDE.md) and
-[`../AGENTS.md`](../AGENTS.md). The `Tool` protocol is kept agent-satisfiable
-(`tools/base.py:34`) precisely so that flipping the switch is a ~20-line wrapper
-and not a rewrite. Do not build any of these into the core; dock them at the seams
-above.
+Per spec §9, these are kept out of the base by design, each with a known docking
+point: MCP, memory/persistence, RAG, graph orchestration, in-core permissions, and
+multi-agent orchestration. The last one is the orchestration section in
+[`CLAUDE.md`](../CLAUDE.md) and [`../AGENTS.md`](../AGENTS.md): the base ships
+single-agent, and because the `Tool` protocol is kept agent-satisfiable
+(`tools/base.py:34`), adding sub-agents later is a ~20-line wrapper, not a rewrite.
+These all dock at the seams above rather than living in the core — that's the grain
+to build with, not a wall.
 
 ---
 

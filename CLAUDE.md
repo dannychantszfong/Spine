@@ -1,83 +1,149 @@
-# CLAUDE.md — spine
+# CLAUDE.md — building on spine
 
-Spine is a minimal Python agent backbone: a language model, four tools, and a
-loop. It is a foundation to be **cloned**, not a product. The authoritative
-design rationale and full spec live in **`spine-spec.md`** — read it before any
-structural change. This file is the short, always-on rule layer.
+This repo is a **clone of spine**: a minimal Python agent foundation — a language
+model, four tools, and a loop. It is a starting point, not a product, and not
+something to preserve. Working here, your job is to help grow this clone into a
+**new agent** — the one the developer actually wants — building on the skeleton
+rather than guarding it.
 
-## Prime directives (do not violate without an explicit instruction to)
+The full rationale lives in [`doc/spine-spec.md`](doc/spine-spec.md); a code-level
+walkthrough is in [`doc/ARCHITECTURE.md`](doc/ARCHITECTURE.md). This file is the
+short, always-on orientation.
 
-- Keep the core tiny. Capability belongs in a clone, not in the base.
-- The model gets **exactly four tools**: `read`, `write`, `edit`, `bash`. Do not
-  add a fifth. `bash` is the escape hatch for everything else.
-- **Own the loop.** It is hand-written (~150–200 lines). Do not introduce an
-  agent framework (LangChain / LangGraph) into the core.
-- **Rent the provider layer.** All LLM calls go through `litellm` behind
-  `provider.py`'s `complete()`. The core never imports a provider SDK directly.
-- **Seams over features.** Invest in clean interfaces, not speculative capability.
-- Tool args are **Pydantic-validated before `execute()`**; a validation failure is
-  *returned to the model as the tool result*, never raised.
+## Bootstrap protocol — do this first
 
-## Architecture (detail in `spine-spec.md` §2)
+On a fresh clone, before changing anything:
 
-- `provider.py` — rented litellm wrapper: `complete(model, messages, tools)`
-- `agent.py` — the loop, conversation state, tool dispatch, hooks
-- `tools/` — `read`, `write`, `edit`, `bash`; each implements the `Tool` protocol
-- `hooks.py` — `before`/`after_tool_call`, session lifecycle; **ships PERMISSIVE**
-- `skills.py` — skill discovery/loading seam
+1. **Read the skeleton.** Understand what you're standing on — the loop
+   (`src/spine/agent.py`), the four tools (`src/spine/tools/`), and the seams
+   where capability attaches (hooks, skills, the system prompt). It's small on
+   purpose; you can hold all of it in your head in one sitting.
+2. **Ask the developer what they're building.** What agent is this becoming? What
+   does it need to do, what tools / skills / knowledge does its domain require,
+   what should it refuse? Don't assume — interview.
+3. **Discuss the shape.** Talk it through before writing code: which capability is
+   a tool, which is a skill, which is a prompt change, what policy the hook should
+   enforce. Map it onto the seams below.
+4. **Then grow the body.** Once you both know the shape, build it at the seams.
+   The loop and the four tools usually stay as they are; the new agent is mostly
+   new tools, new skills, a new prompt, and a tightened hook.
 
-## Tool invariants
+Don't spend effort preserving the name "spine" or defending the original
+minimalism for its own sake. Preserve what's *useful* about the foundation — read
+it, understand why it's shaped this way — then build forward.
 
-- `edit` uses **exact string replacement**: `old_string` must match exactly once.
-  Zero matches or multiple matches → return an error to the model so it retries.
-  Never silently edit. Do **not** switch to line-ranges or diffs.
-- `write` clobbers; prefer `edit` for existing files.
-- `bash` runs as the launching user with a timeout. No in-core permission checks.
+## The grain — how the foundation is built, and why
 
-## Security
+Spine is deliberately minimal, and the minimalism is load-bearing. These are the
+defaults to build *with*; each comes with its reason, so you know when it applies.
 
-- No permission system in the core. Isolation is **external** (sandbox/container).
-- The `before_tool_call` hook is the ONLY place policy may live, and it ships
-  permissive. Do not bake allowlists or confirmations into the core itself.
+- **Four tools.** The model gets `read`, `write`, `edit`, and `bash`. `bash` is
+  the escape hatch — grep, git, curl, tests, package installs all go through it,
+  which is why four primitives cover so much. Reach for a fifth built-in only when
+  a real need genuinely can't be served by the four; usually a *skill* (a CLI +
+  README the agent runs via `bash`) is the lighter way to add capability.
+- **Own the loop.** The agent loop (`src/spine/agent.py`, ~150 lines) is
+  hand-written so you can read and trust every line. Keeping it framework-free (no
+  LangChain / LangGraph in the core) is what keeps it that readable and lock-in-free.
+- **Rent the provider.** All LLM calls go through `provider.py`'s `complete()`,
+  which rents `litellm` for multi-provider normalization. Keeping provider SDKs
+  out of the rest of the core means swapping or upgrading a provider touches one
+  file.
+- **Seams over features.** Capability attaches at clean interfaces — tools, hooks,
+  skills, the prompt — rather than being baked into the core. A good seam costs
+  almost nothing now and lets heavy machinery dock later without a rewrite.
+- **Validate, don't crash.** Tool args are Pydantic-validated before `execute()`,
+  and a validation failure is *returned to the model as the tool result*, not
+  raised — so the agent self-corrects instead of dying.
 
-## The Tool protocol must stay agent-satisfiable
+Building along this grain keeps the agent readable, debuggable, and free of
+framework lock-in. That's the recommendation. It isn't a cage — see below.
 
-- A `Tool` is: `name`, `description`, Pydantic `parameters`, `execute() -> result`.
-- Never add anything that would prevent an `Agent` from being wrapped as a `Tool`.
-  This is what keeps orchestration a ~20-line future wrapper instead of a rewrite.
+## Going against the grain — allowed, just know the cost
 
-## ⟶ ORCHESTRATION SWITCH — STATUS: DISABLED
+This foundation is built for simplicity, minimalism, and being ready to extend.
+Going heavy cuts against that grain. You can still do it — it's the developer's
+call — but be honest about the trade:
+
+- Adding a fifth core tool, putting provider SDKs in the core, or growing the loop
+  past what one person can hold in their head all erode the very property that
+  makes this foundation worth using. Not forbidden; just not recommended, and
+  worth a deliberate decision rather than a quiet drift.
+- If the agent genuinely needs a heavy framework — LangChain, LangGraph, a full
+  orchestration runtime — say so plainly, to the coding agent and the developer
+  both: you are probably **better off starting fresh** with that framework than
+  retrofitting it onto this foundation, which isn't designed to mesh with it.
+  Bolting it on tends to give you the costs of both and the benefits of neither.
+
+Compass, not cage: state the recommendation and the reason, then let the developer
+decide.
+
+## The map — where things live, what attaches where
 
 ```
-WHILE DISABLED (current):
-  - Spine is single-agent. One loop, one model, four tools.
-  - DO NOT build a multi-agent subsystem.
-  - DO NOT hand any agent another agent as a tool.
-  - DO NOT add scheduling, inter-agent messaging, shared state,
-    fan-out/fan-in, or supervisor/handoff protocols.
-  - Keep the Tool protocol agent-satisfiable (see above).
-
-TO ENABLE — change "STATUS: DISABLED" to "STATUS: ENABLED" above, then:
-  1. Add agent_as_tool(agent) -> Tool (~20 lines): execute() runs the
-     child agent's loop on args["task"], returns its final message.
-  2. Give a parent agent one or more child agents in its tool list.
-  3. Add deferred pieces (parallel, shared state, handoff) ONLY if a
-     real workflow needs them — the minimum, not the set.
-  4. Mind cost/latency: each nested agent call burns a full conversation.
+src/spine/
+  agent.py        # the loop, conversation state, tool dispatch, hooks — you own this
+  provider.py     # rented litellm wrapper: complete(model, messages, tools)
+  tools/          # read · write · edit · bash  (the four built-ins; Tool protocol in base.py)
+  hooks.py        # before/after_tool_call + session lifecycle — ships PERMISSIVE
+  skills.py       # skill discovery/loading seam
+  prompts/system.md   # the base system prompt
+main.py           # runnable entry point — the repo is the agent, so its entry lives at the root
+skills/           # capability-as-documentation; `lines/` is a worked example
+tests/
 ```
 
-## Build & test
+The seams a new agent attaches to:
 
-- Install (incl. dev tools): `uv sync --extra dev`  (or `pip install -e ".[dev]"`)
-- Test: `pytest`  — no API key needed; the loop test drives a stubbed provider,
-  and `provider.py` imports `litellm` lazily so the suite runs offline.
-- Run the example: `python examples/minimal_agent.py "<task>"`
-  (needs a provider key in the env, e.g. `ANTHROPIC_API_KEY`; pick a model with
-  `--model`). The default model is `anthropic/claude-opus-4-8`.
-- Lint / format: `ruff check` / `ruff format`
+- **Add a tool** — implement the `Tool` protocol (`tools/base.py`: `name`,
+  `description`, Pydantic `parameters`, `execute() -> ToolResult`) and pass it to
+  `Agent(tools=[...])`.
+- **Add a skill** — drop a CLI + `README.md` under `skills/`; the agent discovers
+  it and runs it via `bash`. No plugin protocol — that's the point.
+- **Set policy** — tighten the `before_tool_call` hook (`hooks.py`). It ships
+  permissive; this is the *only* place policy belongs (allowlists, confirmations,
+  an `rm -rf` guard, audit logging). The core has no permission system on
+  purpose — isolation is external (sandbox / container).
+- **Change behavior or voice** — edit `prompts/system.md`, or pass `system_prompt=`.
+
+`doc/ARCHITECTURE.md` has copy-pasteable recipes for each of these.
+
+## Sub-agents (orchestration) — ships single-agent, opens cleanly
+
+This foundation ships **single-agent**: one loop, one model, four tools. That's
+the right default, and most agents never need more.
+
+If the agent you're building genuinely needs **sub-agents** — a parent that hands
+work to specialized children — the foundation is built to allow it without a
+rewrite, because the `Tool` protocol is kept agent-satisfiable: an `Agent` can be
+wrapped as a `Tool` whose `execute(args)` runs the child's loop on `args["task"]`
+and returns its final message. The wrapper is ~20 lines.
+
+Before you add it, decide a few things up front:
+
+- **Which children, and why** — what specialized agents actually earn their keep.
+- **Nesting depth** — how deep parent → child → grandchild is allowed to go.
+- **Token / cost budget** — each nested agent call burns a whole conversation;
+  watch cost and latency.
+- **Who terminates** — how a child signals "done," and how the parent decides the
+  overall task is complete.
+
+Add only what a real workflow needs — start with `agent_as_tool`, and add parallel
+fan-out / shared state / handoff later if and when they're actually required, not
+speculatively.
 
 ## Style
 
 - Python 3.12+. Type hints everywhere. Pydantic for schemas.
-- This is a reference codebase meant to be **read**. Keep functions small and
-  obvious; prefer clarity over cleverness. No premature abstraction.
+- This is a codebase meant to be **read**. Keep functions small and obvious;
+  prefer clarity over cleverness. No premature abstraction.
+
+## Build & run
+
+- Install (incl. dev tools): `pip install -e ".[dev]"`  (or `uv sync --extra dev`)
+- Run the agent: `python main.py "<task>"` — needs a provider key in the env (e.g.
+  `ANTHROPIC_API_KEY`); pick a model with `--model`. The default model is
+  `anthropic/claude-opus-4-8`.
+- Test: `pytest` — no API key needed; the loop test drives a stubbed provider, and
+  `provider.py` imports `litellm` lazily so the suite runs offline.
+- Lint / format: `ruff check` / `ruff format`
